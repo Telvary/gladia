@@ -22,7 +22,7 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
       - name: Build Gladia image
         env:
-          DOCKER_BUILDKIT=1
+          DOCKER_BUILDKIT:1
         working-directory: ./gladia/src
         run: docker build -t gladiaio/gladia:ci-${{ GITHUB_REF_NAME }} -f gpu.Dockerfile
 
