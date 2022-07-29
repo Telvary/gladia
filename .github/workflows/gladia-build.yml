@@ -31,6 +31,7 @@ jobs:
     runs-on: [self-hosted, linux, GPU]
     steps:
       - name: Get GPU ID
+        id: gpuid
         run: |
           N=$(echo ${{ runner.name }} )
           if [[ ${N: -1} =~ [0-9] ]]; then 
@@ -43,9 +44,9 @@ jobs:
       - name: Start Gladia Container
         run: | 
           docker run -d \
-          --cpus 14 --gpus '"device=${{steps.vars.outputs.gpuid}}"' --shm-size=20g \
+          --cpus 14 --gpus '"device=${{steps.gpuid.outputs.gpuid}}"' --shm-size=20g \
           -e IS_CI="True" \
-          -p ${{steps.vars.outputs.gpuid}}8000:8000
+          -p ${{steps.gpuid.outputs.gpuid}}8000:8000
           -v /mnt/models/volume:/tmp/gladia/models gladiaio/gladia:ci-${{ github.ref_name }} \
           --name gladia-${{ github.ref_name	 }} 
 
@@ -53,7 +54,7 @@ jobs:
         with:
           max_attempts: 36
           retry_on: error
-          command: curl http://localhost:${{steps.vars.outputs.gpuid}}8000/v2/health/ready --connect-timeout 5
+          command: curl http://localhost:${{steps.gpuid.outputs.gpuid}}8000/v2/health/ready --connect-timeout 5
 
 
       - name: Test 1/2
@@ -65,6 +66,7 @@ jobs:
 
       - name: Clean Docker Test Env
         if: always()
+        continue-on-error: True
         run: |
           docker stop gladiaio/gladia:ci-${{ github.ref_name }}
           docker rm gladiaio/gladia:ci-${{ github.ref_name }}
