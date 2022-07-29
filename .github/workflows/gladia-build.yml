@@ -22,9 +22,9 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
       - name: Build Gladia image
         env:
-          DOCKER_BUILDKIT:1
+          DOCKER_BUILDKIT: 1
         working-directory: ./gladia/src
-        run: docker build -t gladiaio/gladia:ci-${{ GITHUB_REF_NAME }} -f gpu.Dockerfile
+        run: docker build -t gladiaio/gladia:ci-${{ github.ref_name	 }} -f gpu.Dockerfile
 
   test:
     needs: build
@@ -36,7 +36,7 @@ jobs:
           if [[ ${N: -1} =~ [0-9] ]]; then echo ::set-output name=gpuid::$(echo ${N: -1} ); else echo "Error : unexpected GPU ID"; exit 1; fi
 
       - name: Start Gladia Container
-        run: docker run -d --cpus 14 --gpus '"device=${{steps.vars.outputs.gpuid}}"' --shm-size=20g --name gladia-${{ GITHUB_REF_NAME }} -e IS_CI="True" -v /mnt/models/volume:/tmp/gladia/models gladiaio/gladia:ci-${{ GITHUB_REF_NAME }}
+        run: docker run -d --cpus 14 --gpus '"device=${{steps.vars.outputs.gpuid}}"' --shm-size=20g --name gladia-${{ github.ref_name	 }} -e IS_CI="True" -v /mnt/models/volume:/tmp/gladia/models gladiaio/gladia:ci-${{ github.ref_name	 }}
 
       - name: Test 1/2
-        run: docker exec -i -e PR=${{ github.event.pull_request.number }} -e GHT=${{ secrets.GITHUB_TOKEN }} gladia-${{ GITHUB_REF_NAME }} /bin/bash -c 'eval "$(micromamba shell hook --shell=bash)" && micromamba activate server && cd /app/unit-test/ && python3 test.py --github_comment --github_token $GHT --github_pull_request $PR --continue_when_failed'
+        run: docker exec -i -e PR=${{ github.event.pull_request.number }} -e GHT=${{ secrets.GITHUB_TOKEN }} gladia-${{ github.ref_name	 }} /bin/bash -c 'eval "$(micromamba shell hook --shell=bash)" && micromamba activate server && cd /app/unit-test/ && python3 test.py --github_comment --github_token $GHT --github_pull_request $PR --continue_when_failed'
