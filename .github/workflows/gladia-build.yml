@@ -1,0 +1,42 @@
+name: Docker image build
+
+on:
+  push:
+    branches:
+      - 'main'
+
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: [self-hosted, linux, GPU]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      - name: Build Gladia image
+        env:
+          DOCKER_BUILDKIT=1
+        working-directory: ./gladia/src
+        run: docker build -t gladiaio/gladia:ci-${{ GITHUB_REF_NAME }} -f gpu.Dockerfile
+
+  test:
+    needs: build
+    runs-on: [self-hosted, linux, GPU]
+    steps:
+      - name: Get GPU ID
+        run: |
+          N=$(echo ${{ runner.name }} )
+          if [[ ${N: -1} =~ [0-9] ]]; then echo ::set-output name=gpuid::$(echo ${N: -1} ); else echo "Error : unexpected GPU ID"; exit 1; fi
+
+      - name: Start Gladia Container
+        run: docker run -d --cpus 14 --gpus '"device=${{steps.vars.outputs.gpuid}}"' --shm-size=20g --name gladia-${{ GITHUB_REF_NAME }} -e IS_CI="True" -v /mnt/models/volume:/tmp/gladia/models gladiaio/gladia:ci-${{ GITHUB_REF_NAME }}
+
+      - name: Test 1/2
+        run: docker exec -i -e PR=${{ github.event.pull_request.number }} -e GHT=${{ secrets.GITHUB_TOKEN }} gladia-${{ GITHUB_REF_NAME }} /bin/bash -c 'eval "$(micromamba shell hook --shell=bash)" && micromamba activate server && cd /app/unit-test/ && python3 test.py --github_comment --github_token $GHT --github_pull_request $PR --continue_when_failed'
