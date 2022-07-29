@@ -50,11 +50,11 @@ jobs:
       - name: Start Gladia Container
         run: | 
           docker run -d \
-          --cpus 14 --gpus '"device=${{steps.gpuid.outputs.gpuid}}"' --shm-size=20g \
+          --cpus 14 --gpus '"device=${{steps.gpuid.outputs.gpuid}}"' --shm-size=5g \
           -e IS_CI="True" \
           -p ${{steps.gpuid.outputs.gpuid}}8000:8000 \
           -v /mnt/models/volume:/tmp/gladia/models \
-          --name gladia-${{ github.ref_name	 }} gladiaio/gladia:ci-${{ github.ref_name }}
+          --name gladia-${{ github.ref_name }} gladiaio/gladia:ci-${{ github.ref_name }}
 
       - uses: nick-fields/retry@v2
         with:
@@ -75,5 +75,5 @@ jobs:
         if: always()
         continue-on-error: True
         run: |
-          docker stop gladiaio/gladia:ci-${{ github.ref_name }}
-          docker rm gladiaio/gladia:ci-${{ github.ref_name }}
+          docker stop gladia-${{ github.ref_name	}}
+          docker rm gladia-${{ github.ref_name	}}
