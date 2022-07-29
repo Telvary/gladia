@@ -15,17 +15,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
       - name: Login to Docker Hub
         uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
       - name: Login to NVCR Registry
         uses: docker/login-action@v2
         with:
           registry: nvcr.io
           username: ${{ secrets.NVCR_USERNAME }}
           password: ${{ secrets.NVCR_ACCESS_TOKEN }}
+
       - name: Build Gladia image
         env:
           DOCKER_BUILDKIT: 1
@@ -56,20 +59,19 @@ jobs:
           -v /mnt/models/volume:/tmp/gladia/models \
           --name gladia-${{ github.ref_name }} gladiaio/gladia:ci-${{ github.ref_name }}
 
-      - uses: nick-fields/retry@v2
+      - uses: Gladia container readiness
         with:
           timeout_seconds: 10
           max_attempts: 36
           retry_on: error
           command: curl http://localhost:${{steps.gpuid.outputs.gpuid}}8000/v2/health/ready --connect-timeout 5
 
-
       - name: Test 1/2
         run: | 
           docker exec -i \
           -e PR=${{ github.event.pull_request.number }} -e GHT=${{ secrets.GITHUB_TOKEN }} \
           gladia-${{ github.ref_name }} \
-          /bin/bash -c 'eval "$(micromamba shell hook --shell=bash)" && micromamba activate server && cd /app/unit-test/ && python3 test.py --github_comment --github_token $GHT --github_pull_request $PR --continue_when_failed'
+          /bin/bash -c 'echo $PR; eval "$(micromamba shell hook --shell=bash)" && micromamba activate server && cd /app/unit-test/ && python3 test.py --continue_when_failed'
 
       - name: Clean Docker Test Env
         if: always()
