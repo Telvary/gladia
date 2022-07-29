@@ -33,7 +33,12 @@ jobs:
       - name: Get GPU ID
         run: |
           N=$(echo ${{ runner.name }} )
-          if [[ ${N: -1} =~ [0-9] ]]; then echo ::set-output name=gpuid::$(echo ${N: -1} ); else echo "Error : unexpected GPU ID"; exit 1; fi
+          if [[ ${N: -1} =~ [0-9] ]]; then 
+            echo ::set-output name=gpuid::$(echo ${N: -1} )
+          else 
+            echo "Error : unexpected GPU ID"
+            exit 1
+          fi
 
       - name: Start Gladia Container
         run: | 
