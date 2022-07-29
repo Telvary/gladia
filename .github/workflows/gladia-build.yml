@@ -36,7 +36,30 @@ jobs:
           if [[ ${N: -1} =~ [0-9] ]]; then echo ::set-output name=gpuid::$(echo ${N: -1} ); else echo "Error : unexpected GPU ID"; exit 1; fi
 
       - name: Start Gladia Container
-        run: docker run -d --cpus 14 --gpus '"device=${{steps.vars.outputs.gpuid}}"' --shm-size=20g --name gladia-${{ github.ref_name	 }} -e IS_CI="True" -v /mnt/models/volume:/tmp/gladia/models gladiaio/gladia:ci-${{ github.ref_name	 }}
+        run: | 
+          docker run -d \
+          --cpus 14 --gpus '"device=${{steps.vars.outputs.gpuid}}"' --shm-size=20g \
+          -e IS_CI="True" \
+          -p ${{steps.vars.outputs.gpuid}}8000:8000
+          -v /mnt/models/volume:/tmp/gladia/models gladiaio/gladia:ci-${{ github.ref_name }} \
+          --name gladia-${{ github.ref_name	 }} 
+
+      - uses: nick-fields/retry@v2
+        with:
+          max_attempts: 36
+          retry_on: error
+          command: curl http://localhost:${{steps.vars.outputs.gpuid}}8000/v2/health/ready --connect-timeout 5
+
 
       - name: Test 1/2
-        run: docker exec -i -e PR=${{ github.event.pull_request.number }} -e GHT=${{ secrets.GITHUB_TOKEN }} gladia-${{ github.ref_name	 }} /bin/bash -c 'eval "$(micromamba shell hook --shell=bash)" && micromamba activate server && cd /app/unit-test/ && python3 test.py --github_comment --github_token $GHT --github_pull_request $PR --continue_when_failed'
+        run: | 
+          docker exec -i \
+          -e PR=${{ github.event.pull_request.number }} -e GHT=${{ secrets.GITHUB_TOKEN }} \
+          gladia-${{ github.ref_name }} \
+          /bin/bash -c 'eval "$(micromamba shell hook --shell=bash)" && micromamba activate server && cd /app/unit-test/ && python3 test.py --github_comment --github_token $GHT --github_pull_request $PR --continue_when_failed'
+
+      - name: Clean Docker Test Env
+        if: always()
+        run: |
+          docker stop gladiaio/gladia:ci-${{ github.ref_name }}
+          docker rm gladiaio/gladia:ci-${{ github.ref_name }}
