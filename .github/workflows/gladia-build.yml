@@ -59,7 +59,8 @@ jobs:
           -v /mnt/models/volume:/tmp/gladia/models \
           --name gladia-${{ github.ref_name }} gladiaio/gladia:ci-${{ github.ref_name }}
 
-      - uses: Gladia container readiness
+      - name: Gladia container readiness
+        uses: nick-fields/retry@v2
         with:
           timeout_seconds: 10
           max_attempts: 36
