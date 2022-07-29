@@ -47,8 +47,8 @@ jobs:
           --cpus 14 --gpus '"device=${{steps.gpuid.outputs.gpuid}}"' --shm-size=20g \
           -e IS_CI="True" \
           -p ${{steps.gpuid.outputs.gpuid}}8000:8000
-          -v /mnt/models/volume:/tmp/gladia/models gladiaio/gladia:ci-${{ github.ref_name }} \
-          --name gladia-${{ github.ref_name	 }} 
+          -v /mnt/models/volume:/tmp/gladia/models \
+          --name gladia-${{ github.ref_name	 }} gladiaio/gladia:ci-${{ github.ref_name }}
 
       - uses: nick-fields/retry@v2
         with:
