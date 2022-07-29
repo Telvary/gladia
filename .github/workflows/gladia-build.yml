@@ -23,7 +23,7 @@ jobs:
       - name: Build Gladia image
         env:
           DOCKER_BUILDKIT: 1
-        working-directory: ./gladia/src
+        working-directory: ./src
         run: docker build -t gladiaio/gladia:ci-${{ github.ref_name	 }} -f gpu.Dockerfile
 
   test:
