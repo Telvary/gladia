@@ -53,7 +53,7 @@ jobs:
       - name: Start Gladia Container
         run: | 
           docker run -d \
-          --cpus 14 --gpus '"device=${{steps.gpuid.outputs.gpuid}}"' --shm-size=5g \
+          --cpus 14 --memory 32g --gpus '"device=${{steps.gpuid.outputs.gpuid}}"' --shm-size=5g \
           -e IS_CI="True" \
           -p ${{steps.gpuid.outputs.gpuid}}8000:8000 \
           -v /mnt/models/volume:/tmp/gladia/models \
