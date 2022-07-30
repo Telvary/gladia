@@ -54,7 +54,7 @@ jobs:
         run: | 
           docker run -d \
           --cpus 14 --memory 32g --gpus '"device=${{steps.gpuid.outputs.gpuid}}"' --shm-size=5g \
-          -e IS_CI="True" \
+          -e IS_CI="True" -e NVIDIA_VISIBLE_DEVICES=${{steps.gpuid.outputs.gpuid}} -e CUDA_VISIBLE_DEVICES=${{steps.gpuid.outputs.gpuid}} \
           -p ${{steps.gpuid.outputs.gpuid}}8000:8000 \
           -v /mnt/models/volume:/tmp/gladia/models \
           --name gladia-${{ github.ref_name }} gladiaio/gladia:ci-${{ github.ref_name }}
