@@ -67,6 +67,9 @@ jobs:
           retry_on: error
           command: curl http://localhost:${{steps.gpuid.outputs.gpuid}}8000/v2/health/ready --connect-timeout 5
 
+      - name: Give it 5s to make sure it is ready
+        run: sleep 5s
+        
       - name: Test 1/2
         run: | 
           docker exec -i \
