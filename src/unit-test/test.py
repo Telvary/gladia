@@ -9,6 +9,7 @@ global nb_total_tests
 global nb_test_ran, nb_test_passed, nb_test_failed, nb_test_skipped
 global test_final_status
 global status_passed, status_failed, status_skipped
+global endpoints
 
 status_passed = "🟢"
 status_skipped = "🟡"
@@ -17,6 +18,8 @@ status_failed = "🔴"
 
 ExitStatus_failure = 1
 ExitStatus_success = 0
+
+current_directory = os.path.dirname(os.path.abspath(__file__))
 
 
 def get_nb_tests(url, header, endpoints, specific_endpoints=[], specific_models=""):
@@ -36,18 +39,20 @@ def get_nb_tests(url, header, endpoints, specific_endpoints=[], specific_models=
 
 def get_nb_models(url, path, header):
     response = requests.get(f"{url}{path}", headers=header)
-    models = response.json()
+    models = response.json()["models"]
     return len(models)
 
 
-def request_endpoint(url, path, header, params=False, files=False, max_retry=3):
+def request_endpoint(
+    url, path, header, params=False, data={}, files=False, max_retry=3
+):
     response = type("", (), {})()
     response.status_code = 500
     tries = 1
     while tries <= max_retry and response.status_code != 200:
         if params != False and files != False:
             response = requests.post(
-                f"{url}{path}", headers=header, params=params, files=files
+                f"{url}{path}", headers=header, params=params, data=data, files=files
             )
             file = files[next(iter(files))][0]
             if file is None:
@@ -71,6 +76,7 @@ def perform_test(
     global status_passed, status_failed, status_skipped
     global nb_total_tests
     global IS_CI
+    global endpoints
 
     tag = details["get"]["tags"][0]
 
@@ -78,7 +84,7 @@ def perform_test(
         models = specific_models
     else:
         response = requests.get(f"{url}{path}", headers=header)
-        models = response.json()
+        models = response.json()["models"]
 
     for model in models:
         if IS_CI:
@@ -94,7 +100,8 @@ def perform_test(
             valid = True
 
             for file_name in files_to_test:
-                files = {"image": (file_name, open(file_name, "rb"))}
+                file_path = os.path.join(current_directory, file_name)
+                files = {"image": (file_name, open(file_path, "rb"))}
 
                 response = request_endpoint(
                     url=url,
@@ -141,7 +148,8 @@ def perform_test(
             valid = True
 
             for file_name in files_to_test:
-                files = {"audio": (file_name, open(file_name, "rb"))}
+                file_path = os.path.join(current_directory, file_name)
+                files = {"audio": (file_name, open(file_path, "rb"))}
 
                 response = request_endpoint(
                     url=url,
@@ -179,17 +187,26 @@ def perform_test(
                 test_final_status = ExitStatus_failure
 
         elif input == "text":
-            params = [("model", model)]
+            params = {"model": model}
+            request_body_info = details["post"]["requestBody"]["content"][
+                "application/json"
+            ]["schema"]
+            data = {}
+            if "title" in request_body_info:
+                data[request_body_info["title"]] = request_body_info["default"]
+            else:
+                schema = request_body_info["$ref"].split("/")[-1]
+                properties = endpoints["components"]["schemas"][schema]["properties"]
+                for key, value in properties.items():
+                    data[value["title"]] = value["default"]
 
-            for parameter in details["post"]["parameters"]:
-                if parameter["schema"]["title"] != "Model":
-                    params.append(
-                        (parameter["schema"]["title"], parameter["schema"]["default"])
-                    )
-
-            params = tuple(params)
             response = request_endpoint(
-                url=url, path=path, header=header, params=params, max_retry=max_retry
+                url=url,
+                path=path,
+                header=header,
+                params=params,
+                data=data,
+                max_retry=max_retry,
             )
 
             if response.status_code == 200:
@@ -319,6 +336,9 @@ def main(
     github_token,
     github_pull_request,
 ):
+
+    global endpoints
+
     skip_when_failed = not continue_when_failed
     if specific_endpoints:
         specific_endpoints = specific_endpoints.split(",")
