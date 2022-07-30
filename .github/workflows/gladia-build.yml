@@ -74,9 +74,9 @@ jobs:
           gladia-${{ github.ref_name }} \
           /bin/bash -c 'echo $PR; eval "$(micromamba shell hook --shell=bash)" && micromamba activate server && cd /app/unit-test/ && python3 test.py --continue_when_failed'
 
-      - name: Clean Docker Test Env
-        if: always()
-        continue-on-error: True
-        run: |
-          docker stop gladia-${{ github.ref_name	}}
-          docker rm gladia-${{ github.ref_name	}}
+      #- name: Clean Docker Test Env
+      #  if: always()
+      #  continue-on-error: True
+      #  run: |
+      #    docker stop gladia-${{ github.ref_name	}}
+      #    docker rm gladia-${{ github.ref_name	}}
