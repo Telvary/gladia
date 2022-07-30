@@ -57,7 +57,7 @@ jobs:
           -e IS_CI="True" -e NVIDIA_VISIBLE_DEVICES=${{steps.gpuid.outputs.gpuid}} -e CUDA_VISIBLE_DEVICES=${{steps.gpuid.outputs.gpuid}} \
           -p ${{steps.gpuid.outputs.gpuid}}8000:8000 \
           -v /mnt/models/volume:/tmp/gladia/models \
-          --name gladia-${{ github.ref_name }} gladiaio/gladia:ci-${{ github.ref_name }}
+          --name jlmagouille-${{ github.ref_name }} gladiaio/gladia:ci-${{ github.ref_name }}
 
       - name: Gladia container readiness
         uses: nick-fields/retry@v2
@@ -74,7 +74,7 @@ jobs:
         run: | 
           docker exec -i \
           -e PR=${{ github.event.pull_request.number }} -e GHT=${{ secrets.GITHUB_TOKEN }} \
-          gladia-${{ github.ref_name }} \
+          jlmagouille-${{ github.ref_name }} \
           /bin/bash -c 'echo $PR; eval "$(micromamba shell hook --shell=bash)" && micromamba activate server && cd /app/unit-test/ && python3 test.py --continue_when_failed'
 
       #- name: Clean Docker Test Env
