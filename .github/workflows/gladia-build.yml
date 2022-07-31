@@ -2,8 +2,9 @@ name: Docker image build
 
 on:
   push:
-    branches:
-      - 'main'
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 concurrency:
   group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
@@ -70,16 +71,26 @@ jobs:
       - name: Give it 5s to make sure it is ready
         run: sleep 5s
         
-      - name: Test 1/2
+      - name: Test (try 1/2)
+        id: test1
+        continue-on-error: True
         run: | 
           docker exec -i \
           -e PR=${{ github.event.pull_request.number }} -e GHT=${{ secrets.GITHUB_TOKEN }} \
           jlmagouille-${{ github.ref_name }} \
           /bin/bash -c 'echo $PR; eval "$(micromamba shell hook --shell=bash)" && micromamba activate server && cd /app/unit-test/ && python3 test.py --continue_when_failed'
 
-      #- name: Clean Docker Test Env
-      #  if: always()
-      #  continue-on-error: True
-      #  run: |
-      #    docker stop gladia-${{ github.ref_name	}}
-      #    docker rm gladia-${{ github.ref_name	}}
+      - name: Test (try 2/2)
+        if: ${{ steps.test1.outcome != success }}
+        run: | 
+          docker exec -i \
+          -e PR=${{ github.event.pull_request.number }} -e GHT=${{ secrets.GITHUB_TOKEN }} \
+          jlmagouille-${{ github.ref_name }} \
+          /bin/bash -c 'echo $PR; eval "$(micromamba shell hook --shell=bash)" && micromamba activate server && cd /app/unit-test/ && python3 test.py --continue_when_failed'
+
+      - name: Clean Docker Test Env
+        if: always()
+        continue-on-error: True
+        run: |
+          docker stop jlmagouille-${{ github.ref_name	}}
+          docker rm jlmagouille-${{ github.ref_name	}}
