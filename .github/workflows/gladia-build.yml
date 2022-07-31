@@ -34,7 +34,7 @@ jobs:
         env:
           DOCKER_BUILDKIT: 1
         working-directory: ./src
-        run: docker build -t gladiaio/gladia:ci-${{ github.event.pull_request.number || github.head_ref || github.ref }} -f gpu.Dockerfile .
+        run: docker build -t gladiaio/gladia:ci-${{ github.event.number || github.head_ref || github.ref }} -f gpu.Dockerfile .
 
   test:
     needs: build
@@ -58,7 +58,7 @@ jobs:
           -e IS_CI="True" -e NVIDIA_VISIBLE_DEVICES=${{steps.gpuid.outputs.gpuid}} -e CUDA_VISIBLE_DEVICES=${{steps.gpuid.outputs.gpuid}} \
           -p ${{steps.gpuid.outputs.gpuid}}8000:8000 \
           -v /mnt/models/volume:/tmp/gladia/models \
-          --name jlmagouille-${{ github.ref_name }} gladiaio/gladia:ci-${{ github.event.pull_request.number || github.head_ref || github.ref }}
+          --name jlmagouille-${{ github.ref_name }} gladiaio/gladia:ci-${{ github.event.number || github.head_ref || github.ref }}
 
       - name: Gladia container readiness
         uses: nick-fields/retry@v2
