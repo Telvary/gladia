@@ -81,7 +81,7 @@ jobs:
           /bin/bash -c 'echo $PR; eval "$(micromamba shell hook --shell=bash)" && micromamba activate server && cd /app/unit-test/ && python3 test.py --continue_when_failed'
 
       - name: Test (try 2/2)
-        if: ${{ steps.test1.outcome != success }}
+        if: ${{ steps.test1.outcome != 'success' }}
         run: | 
           docker exec -i \
           -e PR=${{ github.event.pull_request.number }} -e GHT=${{ secrets.GITHUB_TOKEN }} \
