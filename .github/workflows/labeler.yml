@@ -5,7 +5,7 @@ on:
     
 jobs:
   triage:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, STD]
     steps:
     - uses: github/issue-labeler@v2.0
       with:
