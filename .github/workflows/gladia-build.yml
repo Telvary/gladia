@@ -2,8 +2,9 @@ name: Docker image build
 
 on:
   push:
-    branches:
-      - 'main'
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 concurrency:
   group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
@@ -33,7 +34,7 @@ jobs:
         env:
           DOCKER_BUILDKIT: 1
         working-directory: ./src
-        run: docker build -t gladiaio/gladia:ci-${{ github.ref_name	 }} -f gpu.Dockerfile .
+        run: docker build -t gladiaio/gladia:ci-${{ github.sha }} -f gpu.Dockerfile .
 
   test:
     needs: build
@@ -57,7 +58,7 @@ jobs:
           -e IS_CI="True" -e NVIDIA_VISIBLE_DEVICES=${{steps.gpuid.outputs.gpuid}} -e CUDA_VISIBLE_DEVICES=${{steps.gpuid.outputs.gpuid}} \
           -p ${{steps.gpuid.outputs.gpuid}}8000:8000 \
           -v /mnt/models/volume:/tmp/gladia/models \
-          --name jlmagouille-${{ github.ref_name }} gladiaio/gladia:ci-${{ github.ref_name }}
+          --name jlmagouille-${{ github.sha	}} gladiaio/gladia:ci-${{ github.sha }}
 
       - name: Gladia container readiness
         uses: nick-fields/retry@v2
@@ -70,16 +71,26 @@ jobs:
       - name: Give it 5s to make sure it is ready
         run: sleep 5s
         
-      - name: Test 1/2
+      - name: Test (try 1/2)
+        id: test1
+        continue-on-error: True
         run: | 
           docker exec -i \
           -e PR=${{ github.event.pull_request.number }} -e GHT=${{ secrets.GITHUB_TOKEN }} \
-          jlmagouille-${{ github.ref_name }} \
+          jlmagouille-${{ github.sha }} \
           /bin/bash -c 'echo $PR; eval "$(micromamba shell hook --shell=bash)" && micromamba activate server && cd /app/unit-test/ && python3 test.py --continue_when_failed'
 
-      #- name: Clean Docker Test Env
-      #  if: always()
-      #  continue-on-error: True
-      #  run: |
-      #    docker stop gladia-${{ github.ref_name	}}
-      #    docker rm gladia-${{ github.ref_name	}}
+      - name: Test (try 2/2)
+        if: ${{ steps.test1.outcome != 'success' }}
+        run: | 
+          docker exec -i \
+          -e PR=${{ github.event.pull_request.number }} -e GHT=${{ secrets.GITHUB_TOKEN }} \
+          jlmagouille-${{ github.sha }} \
+          /bin/bash -c 'echo $PR; eval "$(micromamba shell hook --shell=bash)" && micromamba activate server && cd /app/unit-test/ && python3 test.py --continue_when_failed'
+
+      - name: Clean Docker Test Env
+        if: always()
+        continue-on-error: True
+        run: |
+          docker stop jlmagouille-${{ github.sha }}
+          docker rm jlmagouille-${{ github.sha }}
