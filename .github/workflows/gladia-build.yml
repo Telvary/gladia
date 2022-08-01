@@ -12,6 +12,7 @@ concurrency:
 
 jobs:
   build:
+    if: ! github.event.pull_request.draft || ! contains(fromJson('["documentation", "code style"]'), github.event.pull_request.labels.*.name)
     runs-on: [self-hosted, linux, GPU]
     steps:
       - name: Checkout
