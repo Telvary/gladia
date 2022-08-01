@@ -1,11 +1,11 @@
-doc:
+documentation:
   - '^doc'
 
-style:
+code style:
   - '^(format|style)'
 
-feat:
+enhancement:
   - '^feat'
 
-fix:
+bug:
   - '^fix'
