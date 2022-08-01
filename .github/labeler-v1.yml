@@ -1,0 +1,11 @@
+doc:
+  - '^doc'
+
+style:
+  - '^(format|style)'
+
+feat:
+  - '^feat'
+
+fix:
+  - '^fix'
