@@ -5,6 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+    types: [labeled, synchronize]
 
 concurrency:
   group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
@@ -12,8 +13,8 @@ concurrency:
 
 jobs:
   build:
+    if: ! contains(fromJson('["draft","documentation", "code style"]'), github.event.pull_request.labels.*.name)
     runs-on: [self-hosted, linux, GPU]
-    if: ! github.event.pull_request.draft || ! contains(fromJson('["documentation", "code style"]'), github.event.pull_request.labels.*.name)
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -51,7 +52,6 @@ jobs:
             echo "Error : unexpected GPU ID"
             exit 1
           fi
-
       - name: Start Gladia Container
         run: | 
           docker run -d \
@@ -60,7 +60,6 @@ jobs:
           -p ${{steps.gpuid.outputs.gpuid}}8000:8000 \
           -v /mnt/models/volume:/tmp/gladia/models \
           --name jlmagouille-${{ github.sha	}} gladiaio/gladia:ci-${{ github.sha }}
-
       - name: Gladia container readiness
         uses: nick-fields/retry@v2
         with:
@@ -80,7 +79,6 @@ jobs:
           -e PR=${{ github.event.pull_request.number }} -e GHT=${{ secrets.GITHUB_TOKEN }} \
           jlmagouille-${{ github.sha }} \
           /bin/bash -c 'echo $PR; eval "$(micromamba shell hook --shell=bash)" && micromamba activate server && cd /app/unit-test/ && python3 test.py --continue_when_failed'
-
       - name: Test (try 2/2)
         if: ${{ steps.test1.outcome != 'success' }}
         run: | 
@@ -88,7 +86,6 @@ jobs:
           -e PR=${{ github.event.pull_request.number }} -e GHT=${{ secrets.GITHUB_TOKEN }} \
           jlmagouille-${{ github.sha }} \
           /bin/bash -c 'echo $PR; eval "$(micromamba shell hook --shell=bash)" && micromamba activate server && cd /app/unit-test/ && python3 test.py --continue_when_failed'
-
       - name: Clean Docker Test Env
         if: always()
         continue-on-error: True
