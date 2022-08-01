@@ -9,7 +9,7 @@ jobs:
   triage:
     runs-on: [self-hosted, linux, STD]
     steps:
-    - uses: github/issue-labeler@v2.0
+    - uses: github/issue-labeler@v2.4
       with:
         repo-token: "${{ secrets.GITHUB_TOKEN }}"
         configuration-path: .github/labeler.yml
