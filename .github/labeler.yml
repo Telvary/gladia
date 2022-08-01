@@ -1,11 +1,16 @@
-documentation:
-  - '^doc'
-
-code style:
-  - '^(format|style)'
-
-enhancement:
-  - '^feat'
-
-bug:
-  - '^fix'
+version: 1
+labels:
+- label: "WIP"
+  title: "^WIP:.*"
+- label: "WIP"
+  mergeable: false
+- label: "documentation"
+  title: "^doc.*"
+- label: "code style"
+  title: "^(format|style).*"
+- label: "enhancement"
+  title: "^feat.*"
+- label: "bug"
+  title: "^fix.*"
+- label: "chores"
+  title: "^chores.*"
