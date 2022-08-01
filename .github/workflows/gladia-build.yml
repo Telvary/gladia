@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   build:
-    if: ${{ !contains(github.event.*.labels.*.name, fromJson('["breaking","feat","fix"]')) }}
+    if: ${{ contains(github.event.*.labels.*.name, fromJson('["breaking","feat","fix"]')) }}
     runs-on: [self-hosted, linux, STD]
     steps:
       - name: Checkout
